@@ -17,12 +17,13 @@ const useRenderer = () => {
     context.canvas.width = WIDTH * scale;
   }, [canvasRef]);
 
-  const setPixel = (x, y) => {
+  const setPixel = (x, y, val) => {
     x = x % WIDTH;
     y = y % HEIGHT;
 
-    display.current[x][y] ^= 1;
-    return display.current[x][y];
+    const collision = display.current[x][y] & val;
+    display.current[x][y] ^= val;
+    return collision;
   };
 
   const clear = () => {

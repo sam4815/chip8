@@ -1,12 +1,9 @@
-import { useRef } from 'react';
+import { useState, useRef } from 'react';
 import { INSTRUCTIONS, SPRITES, decodeOpcode } from '../utilities';
 
 const INITIAL_STATE = {
   // Load sprites into memory
-  memory: [
-    ...new Uint8Array(SPRITES),
-    ...new Uint8Array(4096 - SPRITES.length),
-  ],
+  memory: new Uint8Array(4096),
   v: new Uint8Array(16),
   i: 0,
   delayTimer: 0,
@@ -15,14 +12,31 @@ const INITIAL_STATE = {
   stack: new Array(),
   paused: false,
   speed: 10,
+  cycle: 0,
 };
 
 const useCPU = (renderer, keyboard, speaker) => {
+  const [traces, setTraces] = useState([]);
   const state = useRef({ ...INITIAL_STATE });
 
+  const reset = () => {
+    state.current = { ...INITIAL_STATE };
+    setTraces([]);
+  };
+
   const loadProgram = (ROM) => {
+    reset();
+
+    for (let i = 0; i < SPRITES.length; i++) {
+      state.current.memory[i] = SPRITES[i];
+    }
+
     const program = new Uint8Array(ROM);
-    state.current.memory.splice(state.current.pc, program.length, ...program);
+    const memoryStart = 0x200;
+
+    for (let i = 0; i < program.length; i++) {
+      state.current.memory[memoryStart + i] = program[i];
+    }
   };
 
   const playSound = () =>
@@ -57,18 +71,28 @@ const useCPU = (renderer, keyboard, speaker) => {
     const { instruction, ...data } = decodeOpcode(opcode);
     const { operation } = INSTRUCTIONS[instruction];
 
+    const { pc, v, stack, cycle } = state.current;
+    const { x, y } = data;
+    const trace = {
+      instruction,
+      pc,
+      v,
+      x,
+      y,
+      stack,
+      cycle,
+    };
+    setTraces((traces) => [trace].concat(traces.slice(0, 19)));
+
     state.current = operation(state.current, data, {
       keyboard,
       renderer,
       speaker,
     });
+    state.current.cycle = state.current.cycle + 1;
   };
 
-  const reset = () => {
-    state.current = { ...INITIAL_STATE };
-  };
-
-  return { cycle, loadProgram, reset };
+  return { cycle, loadProgram, traces: traces };
 };
 
 export default useCPU;

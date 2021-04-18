@@ -222,10 +222,9 @@ const INSTRUCTIONS = {
         const sprite = state.memory[state.i + row];
 
         for (let col = 0; col < 8; col++) {
-          if (sprite & (1 << (7 - col))) {
-            const pixelErased = renderer.setPixel(v[x] + col, v[y] + row);
-            if (pixelErased) v[0xf] = 1;
-          }
+          const val = sprite & (1 << (7 - col)) ? 1 : 0;
+          const pixelErased = renderer.setPixel(v[x] + col, v[y] + row, val);
+          if (pixelErased) v[0xf] = 1;
         }
       }
 
@@ -321,7 +320,7 @@ const INSTRUCTIONS = {
         .split('')
         .map((digit) => Number(digit));
 
-      memory.splice(state.i, 3, ...BCD);
+      BCD.forEach((digit, idx) => (memory[state.i + idx] = digit));
       return { ...state, memory };
     },
   },

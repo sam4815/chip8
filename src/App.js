@@ -1,15 +1,15 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useKeyboard, useSpeaker, useRenderer, useCPU } from './hooks';
-// import * from '../'
+import DevTools from './DevTools';
 
 const Main = styled.div`
   width: 100%;
   height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   background-color: orange;
 `;
 
@@ -22,13 +22,13 @@ const Canvas = styled.canvas`
   border: 1px solid black;
 `;
 
-function App() {
+const App = () => {
   const keyboard = useKeyboard();
   const speaker = useSpeaker();
   const renderer = useRenderer();
   const cpu = useCPU(renderer, keyboard, speaker);
 
-  const animationRef = useRef(null);
+  const [intervalId, setIntervalId] = useState(null);
   const [roms, setRoms] = useState([]);
 
   useEffect(() => {
@@ -43,29 +43,24 @@ function App() {
   }, []);
 
   const selectRom = async (rom) => {
-    cancel();
+    renderer.clear();
 
     const response = await fetch(`/roms/${rom}`);
     cpu.loadProgram(await response.arrayBuffer());
-    animationRef.current = requestAnimationFrame(step);
+
+    setIntervalId(setInterval(cpu.cycle, 3));
   };
 
-  const step = () => {
-    cpu.cycle();
-    animationRef.current = requestAnimationFrame(step);
-  };
-
-  const cancel = () => {
-    cancelAnimationFrame(animationRef.current);
-    renderer.clear();
-    cpu.reset();
+  const pause = () => {
+    if (intervalId) clearInterval(intervalId);
+    else setIntervalId(setInterval(cpu.cycle, 3));
   };
 
   return (
     <Main>
       <Header>CHIP 8</Header>
       <Canvas ref={renderer.ref} />
-      <button onClick={cancel}>STOP</button>
+      <button onClick={pause}>PAUSE</button>
       <select onChange={(e) => selectRom(e.target.value)}>
         {roms.map((rom) => (
           <option key={rom} value={rom}>
@@ -73,8 +68,9 @@ function App() {
           </option>
         ))}
       </select>
+      <DevTools traces={cpu.traces} />
     </Main>
   );
-}
+};
 
 export default App;
