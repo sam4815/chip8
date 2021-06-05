@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { INSTRUCTIONS, SPRITES, decodeOpcode } from '../utilities';
 
 const INITIAL_STATE = {
@@ -12,26 +12,25 @@ const INITIAL_STATE = {
   stack: new Array(),
   paused: false,
   speed: 10,
-  cycle: 0,
+  debugMode: false,
 };
 
 const useCPU = (renderer, keyboard, speaker) => {
-  const [traces, setTraces] = useState([]);
   const state = useRef({ ...INITIAL_STATE });
+  const [intervalId, setIntervalId] = useState(null);
 
   const reset = () => {
     state.current = { ...INITIAL_STATE };
-    setTraces([]);
   };
 
-  const loadProgram = (ROM) => {
+  const loadRom = (rom) => {
     reset();
 
     for (let i = 0; i < SPRITES.length; i++) {
       state.current.memory[i] = SPRITES[i];
     }
 
-    const program = new Uint8Array(ROM);
+    const program = new Uint8Array(rom);
     const memoryStart = 0x200;
 
     for (let i = 0; i < program.length; i++) {
@@ -71,28 +70,34 @@ const useCPU = (renderer, keyboard, speaker) => {
     const { instruction, ...data } = decodeOpcode(opcode);
     const { operation } = INSTRUCTIONS[instruction];
 
-    const { pc, v, stack, cycle } = state.current;
-    const { x, y } = data;
-    const trace = {
-      instruction,
-      pc,
-      v,
-      x,
-      y,
-      stack,
-      cycle,
-    };
-    setTraces((traces) => [trace].concat(traces.slice(0, 19)));
+    if (state.current.debugMode) console.log(instruction, data);
 
     state.current = operation(state.current, data, {
       keyboard,
       renderer,
       speaker,
     });
-    state.current.cycle = state.current.cycle + 1;
   };
 
-  return { cycle, loadProgram, traces: traces };
+  const start = () => {
+    if (intervalId) return;
+
+    const newIntervalId = setInterval(cycle, 20);
+    setIntervalId(newIntervalId);
+  };
+
+  const stop = () => {
+    clearInterval(intervalId);
+    setIntervalId(null);
+  };
+
+  const isRunning = () => Boolean(intervalId);
+
+  const toggleLogging = () => {
+    state.current.debugMode = !state.current.debugMode;
+  };
+
+  return { start, stop, isRunning, loadRom, toggleLogging };
 };
 
 export default useCPU;
