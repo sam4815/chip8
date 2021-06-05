@@ -1,34 +1,51 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import color from 'tinycolor2';
+import { Layout, Menu } from 'antd';
+import 'antd/dist/antd.css';
+import Icon, {
+  BgColorsOutlined,
+  ToolOutlined,
+  RocketOutlined,
+} from '@ant-design/icons';
+import { ReactComponent as Random } from './assets/random.svg';
 import { useKeyboard, useSpeaker, useRenderer, useCPU } from './hooks';
-import DevTools from './DevTools';
 
-const Main = styled.div`
+const { Content, Sider } = Layout;
+const { Item, SubMenu } = Menu;
+
+const FullPageLayout = styled(Layout)`
+  height: 100%;
   width: 100%;
-  height: 100vh;
   overflow: hidden;
+`;
+
+const Main = styled(Content)`
   display: flex;
-  flex-direction: column;
   align-items: center;
-  background-color: orange;
+  height: 100%;
 `;
 
-const Header = styled.header`
-  color: blue;
-  font-size: 20px;
-`;
+const LIGHT_THEME = {
+  fill: '#FFFFFF',
+  background: '#EAD7D7',
+};
 
-const Canvas = styled.canvas`
-  border: 1px solid black;
-`;
+const DARK_THEME = {
+  fill: '#b4e5af',
+  background: '#000000',
+};
 
 const App = () => {
+  // UI hooks
+  const [theme, setTheme] = useState(DARK_THEME);
+
+  // Emulator hooks
   const keyboard = useKeyboard();
   const speaker = useSpeaker();
-  const renderer = useRenderer();
+  const renderer = useRenderer(theme);
   const cpu = useCPU(renderer, keyboard, speaker);
 
-  const [intervalId, setIntervalId] = useState(null);
   const [roms, setRoms] = useState([]);
 
   useEffect(() => {
@@ -36,40 +53,94 @@ const App = () => {
       const response = await fetch('/roms/index.json');
       const roms = await response.json();
       setRoms(roms);
-      console.log(roms);
+      loadRom(roms[Math.floor(Math.random() * roms.length)]);
     };
 
     fetchAllRoms();
   }, []);
 
-  const selectRom = async (rom) => {
+  const loadRom = async (rom) => {
     renderer.clear();
 
     const response = await fetch(`/roms/${rom}`);
-    cpu.loadProgram(await response.arrayBuffer());
+    cpu.loadRom(await response.arrayBuffer());
 
-    setIntervalId(setInterval(cpu.cycle, 3));
+    cpu.start();
   };
 
-  const pause = () => {
-    if (intervalId) clearInterval(intervalId);
-    else setIntervalId(setInterval(cpu.cycle, 3));
+  const setRandomRom = () => {
+    loadRom(roms[Math.floor(Math.random() * roms.length)]);
   };
+
+  const setRandomTheme = () => {
+    const getRandomColour = () =>
+      `#${Math.floor(Math.random() * 2 ** 24)
+        .toString(16)
+        .padStart(6, 0)}`;
+
+    setTheme({ fill: getRandomColour(), background: getRandomColour() });
+  };
+
+  const siderTheme = color(theme.background).isLight() ? 'light' : 'dark';
 
   return (
-    <Main>
-      <Header>CHIP 8</Header>
-      <Canvas ref={renderer.ref} />
-      <button onClick={pause}>PAUSE</button>
-      <select onChange={(e) => selectRom(e.target.value)}>
-        {roms.map((rom) => (
-          <option key={rom} value={rom}>
-            {rom}
-          </option>
-        ))}
-      </select>
-      <DevTools traces={cpu.traces} />
-    </Main>
+    <FullPageLayout>
+      <Sider
+        width="250px"
+        collapsible
+        defaultCollapsed={true}
+        theme={siderTheme}
+        style={{ overflow: 'auto' }}
+      >
+        <Menu theme={siderTheme} mode="inline">
+          <SubMenu
+            key="games"
+            icon={<RocketOutlined />}
+            title="Games"
+            style={{ marginTop: '20px' }}
+          >
+            <Item key="randomrom" onClick={() => setRandomRom()}>
+              <Icon component={Random} /> Random
+            </Item>
+            {roms.map((rom) => (
+              <Item key={rom} onClick={() => loadRom(rom)}>
+                {rom.match(/[^.]+/)}
+              </Item>
+            ))}
+          </SubMenu>
+          <SubMenu key="themes" icon={<BgColorsOutlined />} title="Themes">
+            <Item key="randomtheme" onClick={() => setRandomTheme()}>
+              <Icon component={Random} /> Random
+            </Item>
+            <Item key="dark" onClick={() => setTheme(DARK_THEME)}>
+              Dark
+            </Item>
+            <Item key="light" onClick={() => setTheme(LIGHT_THEME)}>
+              Light
+            </Item>
+          </SubMenu>
+          <SubMenu key="devtools" icon={<ToolOutlined />} title="Dev Tools">
+            {cpu.isRunning() ? (
+              <Item key="pause" onClick={() => cpu.stop()}>
+                Pause
+              </Item>
+            ) : (
+              <Item key="resume" onClick={() => cpu.start()}>
+                Resume
+              </Item>
+            )}
+            <Item key="console" onClick={() => cpu.toggleLogging()}>
+              Toggle Console Logging
+            </Item>
+          </SubMenu>
+        </Menu>
+      </Sider>
+      <Layout>
+        <Main style={{ background: theme.background }}>
+          <canvas ref={renderer.ref} />
+        </Main>
+      </Layout>
+    </FullPageLayout>
   );
 };
 
