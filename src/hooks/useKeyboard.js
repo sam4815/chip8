@@ -28,7 +28,7 @@ const useKeyboard = () => {
   useEffect(() => {
     const onKeyDown = ({ keyCode }) => {
       const key = KEYMAP[keyCode];
-      if (!key) return;
+      if (key === undefined) return;
 
       setPressed((draft) => {
         draft[key] = true;
@@ -43,7 +43,7 @@ const useKeyboard = () => {
 
     const onKeyUp = ({ keyCode }) => {
       const key = KEYMAP[keyCode];
-      if (!key) return;
+      if (key === undefined) return;
 
       setPressed((draft) => {
         draft[key] = false;
