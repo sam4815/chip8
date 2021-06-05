@@ -50,7 +50,7 @@ const App = () => {
 
   useEffect(() => {
     const fetchAllRoms = async () => {
-      const response = await fetch('/roms/index.json');
+      const response = await fetch(`${process.env.PUBLIC_URL}/roms/index.json`);
       const roms = await response.json();
       setRoms(roms);
       loadRom(roms[Math.floor(Math.random() * roms.length)]);
@@ -62,7 +62,7 @@ const App = () => {
   const loadRom = async (rom) => {
     renderer.clear();
 
-    const response = await fetch(`/roms/${rom}`);
+    const response = await fetch(`${process.env.PUBLIC_URL}/roms/${rom}`);
     cpu.loadRom(await response.arrayBuffer());
 
     cpu.start();
