@@ -132,6 +132,9 @@ const App = () => {
             <Item key="console" onClick={() => cpu.toggleLogging()}>
               Toggle Console Logging
             </Item>
+            <Item key="smoothing" onClick={() => renderer.toggleSmoothing()}>
+              Toggle Smoothing
+            </Item>
           </SubMenu>
         </Menu>
       </Sider>
