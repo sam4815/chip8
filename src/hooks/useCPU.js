@@ -38,9 +38,6 @@ const useCPU = (renderer, keyboard, speaker) => {
     }
   };
 
-  const playSound = () =>
-    state.current.soundTimer > 0 ? speaker.play(440) : speaker.stop();
-
   const updateTimers = () => {
     state.current.delayTimer = Math.max(state.current.delayTimer - 1, 0);
     state.current.soundTimer = Math.max(state.current.soundTimer - 1, 0);
@@ -62,7 +59,7 @@ const useCPU = (renderer, keyboard, speaker) => {
     }
 
     if (!state.current.paused) updateTimers();
-    playSound();
+    if (state.current.soundTimer > 0) speaker.play();
     renderer.draw();
   };
 

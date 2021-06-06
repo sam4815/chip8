@@ -4,40 +4,41 @@ const useSpeaker = () => {
   const audio = useRef(
     new (window.AudioContext || window.webkitAudioContext)()
   );
-  const gain = useRef(audio.current.createGain());
-  const oscillator = useRef(null);
+  const soundBuffers = useRef([]);
+  const playing = useRef(false);
 
   useEffect(() => {
-    const finish = audio.current.destination;
-    gain.current.connect(finish);
-  }, [audio, gain]);
+    const fetchSounds = async () => {
+      const buffers = await Promise.all(
+        Array.from({ length: 3 }).map(async (_, i) => {
+          const request = await fetch(
+            `${process.env.PUBLIC_URL}/mallet${i + 1}.mp3`
+          );
+          const arrayBuffer = await request.arrayBuffer();
+          return audio.current.decodeAudioData(arrayBuffer);
+        })
+      );
 
-  const setMute = (mute) => {
-    gain.current.setValueAtTime(mute, audio.currentTime);
+      soundBuffers.current = buffers;
+    };
+
+    fetchSounds();
+  }, []);
+
+  const play = () => {
+    if (playing.current || !audio.current) return;
+
+    const source = audio.current.createBufferSource();
+    const buffers = soundBuffers.current;
+    source.buffer = buffers[Math.floor(Math.random() * buffers.length)];
+    source.connect(audio.current.destination);
+    source.start();
+
+    playing.current = true;
+    setTimeout(() => (playing.current = false), 100);
   };
 
-  const play = (frequency) => {
-    if (oscillator.current || !audio.current) return;
-
-    oscillator.current = audio.current.createOscillator();
-    oscillator.current.frequency.setValueAtTime(
-      frequency || 440,
-      audio.current.currentTime
-    );
-    oscillator.current.type = 'square';
-    oscillator.current.connect(gain.current);
-    oscillator.current.start();
-  };
-
-  const stop = () => {
-    if (!oscillator.current) return;
-
-    oscillator.current.stop();
-    oscillator.current.disconnect();
-    oscillator.current = null;
-  };
-
-  return { play, stop, setMute };
+  return { play };
 };
 
 export default useSpeaker;
