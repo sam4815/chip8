@@ -53,7 +53,8 @@ const App = () => {
       const response = await fetch(`${process.env.PUBLIC_URL}/roms/index.json`);
       const roms = await response.json();
       setRoms(roms);
-      loadRom(roms[Math.floor(Math.random() * roms.length)]);
+
+      startUpSequence();
     };
 
     fetchAllRoms();
@@ -70,6 +71,22 @@ const App = () => {
 
   const setRandomRom = () => {
     loadRom(roms[Math.floor(Math.random() * roms.length)]);
+  };
+
+  const startUpSequence = async () => {
+    const logoRom = roms.find(
+      (title) => title === 'Chip8 Emulator Logo [Garstyciuks].ch8'
+    );
+    const ibmRom = roms.find((title) => title === 'IBM Logo.ch8');
+    const pongRom = roms.find((title) => title === 'Pong (1 player).ch8');
+
+    loadRom(logoRom);
+    await new Promise((res) => setTimeout(res, 1500));
+
+    loadRom(ibmRom);
+    await new Promise((res) => setTimeout(res, 1500));
+
+    loadRom(pongRom);
   };
 
   const setRandomTheme = () => {
