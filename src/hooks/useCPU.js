@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import { INSTRUCTIONS, SPRITES, decodeOpcode } from '../utilities';
 
 const INITIAL_STATE = {
-  // Load sprites into memory
   memory: new Uint8Array(4096),
   v: new Uint8Array(16),
   i: 0,
@@ -26,6 +25,7 @@ const useCPU = (renderer, keyboard, speaker) => {
   const loadRom = (rom) => {
     reset();
 
+    // Load sprites into memory
     for (let i = 0; i < SPRITES.length; i++) {
       state.current.memory[i] = SPRITES[i];
     }
