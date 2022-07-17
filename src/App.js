@@ -53,8 +53,7 @@ const App = () => {
       const response = await fetch(`${process.env.PUBLIC_URL}/roms/index.json`);
       const roms = await response.json();
       setRoms(roms);
-
-      startUpSequence();
+      startUpSequence(roms);
     };
 
     fetchAllRoms();
@@ -63,22 +62,26 @@ const App = () => {
   const loadRom = async (rom) => {
     renderer.clear();
 
+    cpu.stop();
+
     const response = await fetch(`${process.env.PUBLIC_URL}/roms/${rom}`);
     cpu.loadRom(await response.arrayBuffer());
 
     cpu.start();
   };
 
-  const setRandomRom = () => {
+  const setRandomRom = (roms) => {
     loadRom(roms[Math.floor(Math.random() * roms.length)]);
   };
 
-  const startUpSequence = async () => {
+  const startUpSequence = async (roms) => {
     const logoRom = roms.find(
       (title) => title === 'Chip8 Emulator Logo [Garstyciuks].ch8'
     );
     const ibmRom = roms.find((title) => title === 'IBM Logo.ch8');
-    const pongRom = roms.find((title) => title === 'Pong (1 player).ch8');
+    const brickRom = roms.find(
+      (title) => title === 'Brick (Brix hack, 1990).ch8'
+    );
 
     loadRom(logoRom);
     await new Promise((res) => setTimeout(res, 1500));
@@ -86,7 +89,7 @@ const App = () => {
     loadRom(ibmRom);
     await new Promise((res) => setTimeout(res, 1500));
 
-    loadRom(pongRom);
+    loadRom(brickRom);
   };
 
   const setRandomTheme = () => {
@@ -116,7 +119,7 @@ const App = () => {
             title="Games"
             style={{ marginTop: '20px' }}
           >
-            <Item key="randomrom" onClick={() => setRandomRom()}>
+            <Item key="randomrom" onClick={() => setRandomRom(roms)}>
               <Icon component={Random} /> Random
             </Item>
             {roms.map((rom) => (

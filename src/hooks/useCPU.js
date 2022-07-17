@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { INSTRUCTIONS, SPRITES, decodeOpcode } from '../utilities';
 
-const INITIAL_STATE = {
+const getInitialState = () => ({
   memory: new Uint8Array(4096),
   v: new Uint8Array(16),
   i: 0,
@@ -12,17 +12,18 @@ const INITIAL_STATE = {
   paused: false,
   speed: 10,
   debugMode: false,
-};
+});
 
 const useCPU = (renderer, keyboard, speaker) => {
-  const state = useRef({ ...INITIAL_STATE });
-  const [intervalId, setIntervalId] = useState(null);
+  const state = useRef(getInitialState());
+  const intervalId = useRef(null);
 
   const reset = () => {
-    state.current = { ...INITIAL_STATE };
+    state.current = getInitialState();
   };
 
   const loadRom = (rom) => {
+    stop();
     reset();
 
     // Load sprites into memory
@@ -77,18 +78,18 @@ const useCPU = (renderer, keyboard, speaker) => {
   };
 
   const start = () => {
-    if (intervalId) return;
+    if (intervalId.current) return;
 
     const newIntervalId = setInterval(cycle, 20);
-    setIntervalId(newIntervalId);
+    intervalId.current = newIntervalId;
   };
 
   const stop = () => {
-    clearInterval(intervalId);
-    setIntervalId(null);
+    clearInterval(intervalId.current);
+    intervalId.current = null;
   };
 
-  const isRunning = () => Boolean(intervalId);
+  const isRunning = () => Boolean(intervalId.current);
 
   const toggleLogging = () => {
     state.current.debugMode = !state.current.debugMode;
